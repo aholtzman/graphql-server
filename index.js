@@ -1,27 +1,62 @@
-const { graphql, buildSchema } = require('graphql')
+const {
+  GraphQLSchema,
+  GraphQLID,
+  GraphQLObjectType,
+  GraphQLString,
+  GraphQLInt,
+  GraphQLBoolean,
+  } = require('graphql')
 const express = require('express')
 const graphqlHTTP = require('express-graphql')
 
 const PORT = process.env.PORT || 3000
 const server = express()
 
-const schema = buildSchema(`
-  type Video {
-    title: String,
-    id: ID,
-    duration: Int,
-    watched: Boolean,
+const videoType = new GraphQLObjectType({
+  name: 'Video',
+  description: 'a video lesson on graphql',
+  fields: {
+    id: {
+      type: GraphQLID,
+      description: "the id of the video"
+    },
+    title: {
+      type: GraphQLString,
+      description: 'video title',
+    },
+    duration: {
+      type: GraphQLInt,
+      description: 'length of video'
+    },
+    watched: {
+      type: GraphQLBoolean,
+      description: 'was video watched'
+    },
   }
+})
 
-  type Query {
-    video: Video,
-    videos: [Video]
+const queryType = new GraphQLObjectType({
+  name: 'QueryType',
+  description: 'The root query type.',
+  fields: {
+    video: {
+      type: videoType,
+      resolve: () => new Promise((resolve) => {
+        resolve({
+          id: 'a',
+          title: 'graphql lesson 1',
+          duration: 120,
+          watched: true,
+        })
+      })
+    }
   }
+})
 
-  type Schema {
-    query: Query
-  }
-`)
+const schema = new GraphQLSchema({
+  query: queryType,
+})
+
 
 const videoA = {
   id: 'a',
@@ -39,16 +74,6 @@ const videob = {
 
 const videos = [videoA, videob]
 
-const resolvers = {
-  video: () => ({
-    id: '1',
-    title:'bar',
-    duration: 180,
-    watched: true,
-  }),
-  videos: () => videos
-
-}
 
 server.listen(PORT, () => {
   console.log(`Listening on http://localhost:${PORT}`)
@@ -57,5 +82,4 @@ server.listen(PORT, () => {
 server.use('/graphql', graphqlHTTP({
   schema,
   graphiql: true,
-  rootValue: resolvers,
 }))
